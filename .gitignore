@@ -1,0 +1,11 @@
+*.ipynb
+*.text
+*.json
+apihelper/helper.py
+.env
+**/__pycache__
+make_dataset.py
+**/dataset
+**/models
+**/test_dataset
+**/.ipynb_checkpoints
