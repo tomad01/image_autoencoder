@@ -8,12 +8,12 @@ import torchvision.utils as vutils
 import numpy as np
 from tqdm import tqdm
 from PIL import Image,ImageFile
-from apihelper.models import Resnet50AutoEnc,ViTAutoEnc
+from apihelper.models import Resnet50AutoEnc,ViTAutoEnc2
 from apihelper.custom_datasets import CustomImageDataset
 
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-save_path = './models/ViTAutoEnc2'
+save_path = './models/ViTAutoEnc3'
 os.makedirs(save_path, exist_ok=True)
 
 logging.basicConfig(
@@ -61,17 +61,17 @@ if __name__ == '__main__':
     dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
 
     # Instantiate the model
-    model = ViTAutoEnc()
+    model = ViTAutoEnc2()
 
 
     device = torch.device("mps")
     model.to(device)
     # Loss function
-    criterion = nn.MSELoss()
+    criterion = nn.L1Loss()
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=0.000001)
-    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+    optimizer = optim.Adam(model.parameters(), lr=0.000005)
+    # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
     # Training loop
     num_epochs = 10
@@ -118,7 +118,7 @@ if __name__ == '__main__':
                     f.write(json.dumps(history))
             if (step+1) % save_steps == 0:
                 save_model(model, optimizer, epoch, save_path)
-        scheduler.step()
+        # scheduler.step()
 
         # Save the model, optimizer, and other relevant info
         save_model(model, optimizer, epoch,save_path)

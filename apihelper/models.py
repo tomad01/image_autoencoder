@@ -51,13 +51,14 @@ class ViTAutoEnc2(nn.Module):
     def forward(self, x, decode=True):
         # Encoder pass with ViT
 
-        x = self.encoder.forward_features(x).mean(dim=1)  # Get the feature from ViT (batch_size, vit_embedding_dim)
-        x = F.normalize(x, p=2, dim=1)  # Normalize along the feature dimension
+        # x = self.encoder.forward_features(x).mean(dim=1)  # Get the feature from ViT (batch_size, vit_embedding_dim)
+        x = self.encoder(x)
 
         # Decoder pass
         if decode:
-            x = self.decoder(x)  # Decoding
-        return x
+            return self.decoder(x)  # Decoding
+        else:
+            return F.normalize(x, p=2, dim=1)  # Normalize along the feature dimension
 
 class ViTAutoEnc(nn.Module):
     def __init__(self, vit_model='vit_base_patch16_224'):
@@ -109,15 +110,14 @@ class ViTAutoEnc(nn.Module):
 
 
     def forward(self, x, decode=True):
-        # Encoder pass with ViT
-
-        x = self.encoder.forward_features(x).mean(dim=1)  # Get the feature from ViT (batch_size, vit_embedding_dim)
-        x = F.normalize(x, p=2, dim=1)  # Normalize along the feature dimension
-
         # Decoder pass
         if decode:
-            x = self.decoder(x)  # Decoding
-        return x
+            # x = self.encoder.forward_features(x).mean(dim=1)  # Get the feature from ViT (batch_size, vit_embedding_dim)
+            x = self.encoder(x)
+            return self.decoder(x)  # Decoding
+        else:
+            x = self.encoder(x) # Get the feature from ViT (batch_size, vit_embedding_dim)
+            return F.normalize(x, p=2, dim=1)  # Normalize along the feature dimension
 
 class Resnet50AutoEnc(nn.Module):
     def __init__(self, embedding_dim=512):
