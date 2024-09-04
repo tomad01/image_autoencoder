@@ -38,7 +38,7 @@ class ViTAutoEnc2(nn.Module):
             nn.ReLU(inplace=True),
             
             nn.Conv2d(32, 3, kernel_size=1),  # Adjust channels
-            nn.Sigmoid()  # Normalize output to [0, 1]   
+            nn.Tanh()             
          )
 
         count = sum(p.numel() for p in self.decoder.parameters() if p.requires_grad)
@@ -46,6 +46,9 @@ class ViTAutoEnc2(nn.Module):
         
         count = sum(p.numel() for p in self.encoder.parameters() if p.requires_grad)
         print(f'The encoder has {count/10**6:.2f} million trainable parameters')
+                # Define normalization parameters (mean and std for ImageNet)
+        # self.mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
+        # self.std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
 
 
     def forward(self, x, decode=True):
@@ -53,12 +56,25 @@ class ViTAutoEnc2(nn.Module):
 
         # x = self.encoder.forward_features(x).mean(dim=1)  # Get the feature from ViT (batch_size, vit_embedding_dim)
         x = self.encoder(x)
-
+        embeddings  = F.normalize(x, p=2, dim=1)  # Normalize along the feature dimension
         # Decoder pass
         if decode:
-            return self.decoder(x)  # Decoding
-        else:
-            return F.normalize(x, p=2, dim=1)  # Normalize along the feature dimension
+            x = self.decoder(embeddings)  # Decoding
+            # x_max = x.max(dim=[1, 2, 3], keepdim=True)[0]  # Max value per image, shape: (batch_size, 1, 1, 1)
+            # x = x / x_max  # Divide the tensor by the maximum value
+            # x = (x - self.mean) / self.std
+        return x,embeddings
+            
+        
+    def freeze_encoder(self):
+        for param in self.encoder.parameters():
+            param.requires_grad = False
+        print("Encoder frozen.")
+
+    def unfreeze_encoder(self):
+        for param in self.encoder.parameters():
+            param.requires_grad = True
+        print("Encoder unfrozen.")
 
 class ViTAutoEnc(nn.Module):
     def __init__(self, vit_model='vit_base_patch16_224'):

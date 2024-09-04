@@ -13,7 +13,7 @@ from apihelper.custom_datasets import CustomImageDataset
 
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-save_path = './models/ViTAutoEnc3'
+save_path = './models/ViTAutoEnc'
 os.makedirs(save_path, exist_ok=True)
 
 logging.basicConfig(
@@ -29,11 +29,11 @@ def log_metrics(model, dataset, device, epoch, history,save_path):
         idx = random.randint(0,len(os.listdir('./dataset')))
         img = Image.open('./dataset/'+os.listdir('./dataset')[idx]).convert('RGB')
         img = dataset.transform(img).unsqueeze(0).to(device)
-        reconstructed_image = model(img)
+        reconstructed_image,_ = model(img)
     processed_image = vutils.make_grid(reconstructed_image.squeeze(0).detach().cpu(), padding=2, normalize=True)
-    plt.imsave(f'{save_path}/output_image{epoch}.png', np.transpose(processed_image,(1,2,0)).numpy())    
+    plt.imsave(f'{save_path}/output_image{epoch}.png', np.transpose(processed_image,(1,2,0)).numpy())
     processed_image = vutils.make_grid(img.squeeze(0).detach().cpu(), padding=2, normalize=True)
-    plt.imsave(f'{save_path}/input_image{epoch}.png', np.transpose(processed_image,(1,2,0)).numpy())    
+    plt.imsave(f'{save_path}/input_image{epoch}.png', np.transpose(processed_image,(1,2,0)).numpy())
     model.train()
     # save loss plot
     plt.plot(history)
@@ -70,11 +70,12 @@ if __name__ == '__main__':
     criterion = nn.L1Loss()
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=0.000005)
-    # scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
     # Training loop
     num_epochs = 10
+    train_just_decoder_epochs = 3
     # show loss
     log_steps = 50
     save_steps = 200
@@ -88,7 +89,12 @@ if __name__ == '__main__':
         start_epoch = checkpoint['epoch']
         print(f"Model loaded from {save_path}/model_checkpoint.pth")
     model.train()
+    if train_just_decoder_epochs > 0:
+        model.freeze_encoder()
     for epoch in range(start_epoch+1,num_epochs):
+        if train_just_decoder_epochs > 0 and epoch == train_just_decoder_epochs:
+            model.unfreeze_encoder()
+            logging.info("Encoder unfrozen.")
         running_loss = 0.0
         for step,(inputs, _) in enumerate(tqdm(dataloader, total=len(dataloader))):
             inputs = inputs.to(device)
@@ -97,7 +103,7 @@ if __name__ == '__main__':
             optimizer.zero_grad()
 
             # Forward pass
-            outputs = model(inputs)
+            outputs,embeddings = model(inputs)
             
             # Compute loss
             loss = criterion(outputs, inputs)
@@ -108,17 +114,23 @@ if __name__ == '__main__':
 
             # Print statistics
             running_loss += loss.item()
-            if (step+1) % log_steps == 0:    # Print every log_loss mini-batches
+            if (step+1) % log_steps == 0:    # Print every log_steps mini-batches
                 lr = optimizer.param_groups[0]['lr']
                 logging.info(f"Epoch [{epoch+1}/{num_epochs}], Step [{step+1}/{len(dataloader)}], Loss: {running_loss/log_steps:.4f} lr: {lr}")
                 print(f"Epoch [{epoch+1}/{num_epochs}], Step [{step+1}/{len(dataloader)}], Loss: {running_loss/log_steps:.4f} lr: {lr}")
+                reconstructed_images = outputs.detach().cpu().numpy()
+                embeddings = embeddings.detach().cpu().numpy()
+                inputs = inputs.detach().cpu().numpy()
+                logging.info(f"inputs min pixel value: {inputs.min()}, max pixel value: {inputs.max()}, mean pixel value: {inputs.mean()}")
+                logging.info(f"reconstructed_images min pixel value: {reconstructed_images.min()}, max pixel value: {reconstructed_images.max()}")
+                logging.info(f"Embeddings min value: {embeddings.min()}, max value: {embeddings.max()}")
                 history.append(running_loss/log_steps)
                 running_loss = 0.0
                 with open(f'{save_path}/history.json','w') as f:
                     f.write(json.dumps(history))
             if (step+1) % save_steps == 0:
                 save_model(model, optimizer, epoch, save_path)
-        # scheduler.step()
+        scheduler.step()
 
         # Save the model, optimizer, and other relevant info
         save_model(model, optimizer, epoch,save_path)
