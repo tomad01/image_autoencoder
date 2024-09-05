@@ -1,4 +1,4 @@
-import os, json, random, logging
+import os, json, random, logging, sys, pdb
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
@@ -67,17 +67,17 @@ if __name__ == '__main__':
     device = torch.device("mps")
     model.to(device)
     # Loss function
-    criterion = nn.L1Loss()
+    criterion = nn.MSELoss()
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = optim.Adam(model.parameters(), lr=0.00001,weight_decay=0.01)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
     # Training loop
     num_epochs = 10
-    train_just_decoder_epochs = 3
+    train_just_decoder_epochs = 0
     # show loss
-    log_steps = 50
+    log_steps = 1
     save_steps = 200
     history = []
     load_checkpoint = False
@@ -98,7 +98,8 @@ if __name__ == '__main__':
         running_loss = 0.0
         for step,(inputs, _) in enumerate(tqdm(dataloader, total=len(dataloader))):
             inputs = inputs.to(device)
-            
+            dim0 = inputs.shape[0]
+            inputs = inputs.reshape((dim0,3,224,224))
             # Zero the parameter gradients
             optimizer.zero_grad()
 
@@ -110,6 +111,7 @@ if __name__ == '__main__':
             
             # Backward pass and optimize
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
             # Print statistics
@@ -128,6 +130,10 @@ if __name__ == '__main__':
                 running_loss = 0.0
                 with open(f'{save_path}/history.json','w') as f:
                     f.write(json.dumps(history))
+                # break if embeddings are nan
+                if np.isnan(embeddings).any():
+                    print("Embeddings are nan. Exiting training")
+                    sys.exit(1)
             if (step+1) % save_steps == 0:
                 save_model(model, optimizer, epoch, save_path)
         scheduler.step()

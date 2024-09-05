@@ -10,7 +10,7 @@ class ViTAutoEnc2(nn.Module):
         
         # Use a pre-trained Vision Transformer as the encoder
         self.encoder = create_model(vit_model, pretrained=True)
-        self.encoder.head = nn.Identity()
+        # self.encoder.head = nn.Identity()
         # Extract the feature dimension from the ViT model
         self.vit_embedding_dim = self.encoder.embed_dim
 
@@ -54,9 +54,16 @@ class ViTAutoEnc2(nn.Module):
     def forward(self, x, decode=True):
         # Encoder pass with ViT
 
-        # x = self.encoder.forward_features(x).mean(dim=1)  # Get the feature from ViT (batch_size, vit_embedding_dim)
-        x = self.encoder(x)
-        embeddings  = F.normalize(x, p=2, dim=1)  # Normalize along the feature dimension
+        embeddings = self.encoder.forward_features(x).mean(dim=1)  # Get the feature from ViT (batch_size, vit_embedding_dim)
+        # embeddings = self.encoder(x)
+        # print(embeddings.shape)
+        if torch.isnan(embeddings).any():
+            print("NaN found in encoder output")
+
+        embeddings = F.normalize(embeddings, p=2, dim=1, eps=1e-8)
+
+        if torch.isnan(embeddings).any():
+            print("NaN found in normalized embeddings")
         # Decoder pass
         if decode:
             x = self.decoder(embeddings)  # Decoding
