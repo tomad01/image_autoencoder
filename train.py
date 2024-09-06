@@ -14,6 +14,7 @@ from apihelper.custom_datasets import CustomImageDataset
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 save_path = './models/ResNet101Autoencoder'
+dataset_path = '../dataset'
 os.makedirs(save_path, exist_ok=True)
 
 logging.basicConfig(
@@ -26,8 +27,8 @@ logging.basicConfig(
 def log_metrics(model, dataset, device, epoch, history,save_path):
     model.eval()
     with torch.no_grad():
-        idx = random.randint(0,len(os.listdir('./dataset')))
-        img = Image.open('./dataset/'+os.listdir('./dataset')[idx]).convert('RGB')
+        idx = random.randint(0,len(os.listdir(dataset_path)))
+        img = Image.open(os.path.join(dataset_path,os.listdir(dataset_path)[idx])).convert('RGB')
         img = dataset.transform(img).unsqueeze(0).to(device)
         reconstructed_image,_ = model(img)
     processed_image = vutils.make_grid(reconstructed_image.squeeze(0).detach().cpu(), padding=2, normalize=True)
@@ -56,16 +57,16 @@ def save_model(model, optimizer, epoch,save_path):
     print(f"Model saved at {save_path}/model_checkpoint.pth")
 
 if __name__ == '__main__':
-    dataset = CustomImageDataset('./dataset')
+    dataset = CustomImageDataset(dataset_path)
     
     logging.info(f"Dataset size: {len(dataset)}")
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=512, shuffle=True)
 
     # Instantiate the model
     model = ResNet101Autoencoder()
 
 
-    device = torch.device("mps")
+    device = torch.device("cuda")
     model.to(device)
     # Loss function
     criterion = nn.MSELoss()
@@ -79,7 +80,7 @@ if __name__ == '__main__':
     train_just_decoder_epochs = 1
     # show loss
     log_steps = 10
-    save_steps = 200
+    save_steps = 100
     history = []
     load_checkpoint = False
     start_epoch = -1
