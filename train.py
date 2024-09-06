@@ -60,7 +60,7 @@ if __name__ == '__main__':
     dataset = CustomImageDataset(dataset_path)
     
     logging.info(f"Dataset size: {len(dataset)}")
-    dataloader = DataLoader(dataset, batch_size=512, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=256, shuffle=True)
 
     # Instantiate the model
     model = ResNet101Autoencoder()
