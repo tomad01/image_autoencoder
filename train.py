@@ -8,12 +8,12 @@ import torchvision.utils as vutils
 import numpy as np
 from tqdm import tqdm
 from PIL import Image,ImageFile
-from apihelper.models import Resnet50AutoEnc,ViTAutoEnc2
+from apihelper.models import Resnet50AutoEnc,ViTAutoEnc2,ResNet101Autoencoder
 from apihelper.custom_datasets import CustomImageDataset
 
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-save_path = './models/ViTAutoEnc'
+save_path = './models/ResNet101Autoencoder'
 os.makedirs(save_path, exist_ok=True)
 
 logging.basicConfig(
@@ -52,6 +52,7 @@ def save_model(model, optimizer, epoch,save_path):
         'optimizer_state_dict': optimizer.state_dict(),
     }
     torch.save(checkpoint, f'{save_path}/model_checkpoint.pth')
+    model.save_encoder(f'{save_path}/encoder_checkpoint.pth')
     print(f"Model saved at {save_path}/model_checkpoint.pth")
 
 if __name__ == '__main__':
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
 
     # Instantiate the model
-    model = ViTAutoEnc2()
+    model = ResNet101Autoencoder()
 
 
     device = torch.device("mps")
@@ -70,14 +71,14 @@ if __name__ == '__main__':
     criterion = nn.MSELoss()
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=0.00001,weight_decay=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.00001,weight_decay=1e-5)
     scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 
     # Training loop
     num_epochs = 10
-    train_just_decoder_epochs = 0
+    train_just_decoder_epochs = 1
     # show loss
-    log_steps = 1
+    log_steps = 10
     save_steps = 200
     history = []
     load_checkpoint = False
@@ -111,7 +112,7 @@ if __name__ == '__main__':
             
             # Backward pass and optimize
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
             # Print statistics
@@ -136,6 +137,7 @@ if __name__ == '__main__':
                     sys.exit(1)
             if (step+1) % save_steps == 0:
                 save_model(model, optimizer, epoch, save_path)
+                log_metrics(model, dataset, device, epoch, history,save_path)
         scheduler.step()
 
         # Save the model, optimizer, and other relevant info
