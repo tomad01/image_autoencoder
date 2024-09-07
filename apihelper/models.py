@@ -5,6 +5,25 @@ from timm import create_model
 import torch
 
 
+class SiamResNet(nn.Module):
+    def __init__(self,checkpoint_path):
+        super(SiamResNet, self).__init__()
+        self.encoder = ResNet101Embeddings()
+        self.encoder.load_state_dict(torch.load(checkpoint_path,map_location=torch.device('mps')))
+        self.contrastive_loss = nn.CosineEmbeddingLoss(margin=0.5)
+    
+    def forward(self, x1, x2=None,label=None):
+        if x2 is not None:
+            emb1 = self.encoder(x1)
+            emb2 = self.encoder(x2)
+            sim = self.contrastive_loss(emb1,emb2,label)
+            return sim
+        else:
+            return self.encoder(x1)
+    def save_encoder(self, path):
+        torch.save(self.encoder.state_dict(), path)
+        print(f"Encoder saved to {path}")
+
 class ResNet101Embeddings(nn.Module):
     def __init__(self):
         super(ResNet101Embeddings, self).__init__()

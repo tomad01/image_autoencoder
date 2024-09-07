@@ -1,12 +1,45 @@
 # Define a custom Dataset class for image reconstruction
-import os
+import os, json
+import torch
 from torchvision.transforms import transforms
 from PIL import Image,ImageFile
 from torch.utils.data import Dataset
-from transformers import ViTImageProcessor
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+class CustomImageDataset2(Dataset):
+    def __init__(self, data_path):
+        self.transform = transforms.Compose([
+            transforms.Resize((224, 224)),  # Resize to the desired size
+            transforms.ToTensor(),           # Convert to PyTorch tensor
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        ])
+        self.pozitive_transform = transforms.Compose([
+            transforms.Resize((224, 224)),  # Resize to the desired size
+            transforms.ToTensor(),           # Convert to PyTorch tensor
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            # add noise to the image
+            transforms.Lambda(lambda x: torch.clamp(x + 0.1 * torch.randn_like(x), min=0, max=1))
+
+        ])
+        with open(data_path) as f:
+            dataset = json.load(f)
+        self.parsed_dataset = dataset+dataset
+
+    def __len__(self):
+        return len(self.parsed_dataset)
+
+    def __getitem__(self, idx):
+        pair = self.parsed_dataset[idx]
+        if idx< len(self.parsed_dataset)//2:
+            image1 = self.transform(Image.open(pair['image1']).convert('RGB'))
+            image2 = self.transform(Image.open(pair['image2']).convert('RGB'))
+            similarity_score = torch.tensor(pair['similarity_score'])
+        else:
+            image1 = self.pozitive_transform(Image.open(pair['image1']).convert('RGB'))
+            image2 = self.transform(Image.open(pair['image1']).convert('RGB'))
+            similarity_score = torch.tensor(1)
+        return image1,image2,similarity_score
 
 class CustomImageDataset(Dataset):
     def __init__(self, root_dir):
