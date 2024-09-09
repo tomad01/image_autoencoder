@@ -18,7 +18,6 @@ class CustomImageDataset2(Dataset):
             transforms.Resize((224, 224)),  # Resize to the desired size
             transforms.ToTensor(),           # Convert to PyTorch tensor
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            # add noise to the image
             transforms.Lambda(lambda x: torch.clamp(x + 0.1 * torch.randn_like(x), min=0, max=1))
 
         ])

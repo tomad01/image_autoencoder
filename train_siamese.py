@@ -10,7 +10,7 @@ from apihelper.custom_datasets import CustomImageDataset2
 
 
 save_path = './models/SiamResNet'
-dataset_path = './pairs'
+dataset_path = './pairs/pairs.json'
 os.makedirs(save_path, exist_ok=True)
 
 logging.basicConfig(

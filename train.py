@@ -101,7 +101,7 @@ if __name__ == '__main__':
         for step,(inputs, _) in enumerate(tqdm(dataloader, total=len(dataloader))):
             inputs = inputs.to(device)
             dim0 = inputs.shape[0]
-            inputs = inputs.reshape((dim0,3,224,224))
+            inputs = inputs.reshape((dim0,3,224,224)) # Reshape to 3x224x224
             # Zero the parameter gradients
             optimizer.zero_grad()
 

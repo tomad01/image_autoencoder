@@ -6,10 +6,10 @@ import torch
 
 
 class SiamResNet(nn.Module):
-    def __init__(self,checkpoint_path):
+    def __init__(self,checkpoint_path,device):
         super(SiamResNet, self).__init__()
         self.encoder = ResNet101Embeddings()
-        self.encoder.load_state_dict(torch.load(checkpoint_path,map_location=torch.device('mps')))
+        self.encoder.load_state_dict(torch.load(checkpoint_path,map_location=torch.device(device)))
         self.contrastive_loss = nn.CosineEmbeddingLoss(margin=0.5)
     
     def forward(self, x1, x2=None,label=None):
@@ -17,9 +17,10 @@ class SiamResNet(nn.Module):
             emb1 = self.encoder(x1)
             emb2 = self.encoder(x2)
             sim = self.contrastive_loss(emb1,emb2,label)
-            return sim
+            return sim,emb1
         else:
-            return self.encoder(x1)
+            return False,self.encoder(x1)
+        
     def save_encoder(self, path):
         torch.save(self.encoder.state_dict(), path)
         print(f"Encoder saved to {path}")

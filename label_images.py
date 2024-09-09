@@ -103,7 +103,8 @@ def calculate_ssim(image1, image2):
     return ssim_value
 
 if __name__=="__main__":
-    options = os.listdir("/Users/DToma/work/Aurora.Balthasar/images")
+    base_path = "/Users/DToma/work/image_similarity/dataset"
+    options = os.listdir(base_path)
     dest = "/Users/DToma/work/image_similarity/pairs"
     os.makedirs(dest, exist_ok=True)
     needed = 60_000
@@ -117,19 +118,20 @@ if __name__=="__main__":
         option2 = random.choice(options)
 
         try:
-            image = [i for i in os.listdir(f"/Users/DToma/work/Aurora.Balthasar/images/{option1}") if not i.endswith('.json')][0]
-            image_path1 = f"/Users/DToma/work/Aurora.Balthasar/images/{option1}/{image}"
-            image = [i for i in os.listdir(f"/Users/DToma/work/Aurora.Balthasar/images/{option2}") if not i.endswith('.json')][0]
-            image_path2 = f"/Users/DToma/work/Aurora.Balthasar/images/{option2}/{image}"
+            image_path1 = os.path.join(base_path, option1)
+            image_path2 = os.path.join(base_path, option2)
             # similarity_score = compare_images(image_path1, image_path2)
             similarity_score = calculate_ssim(image_path1, image_path2)
             # print(f"Similarity score: {similarity_score}")
             similarity_score = float(similarity_score)
             assert 0 <= similarity_score <= 1
-            rec = {"similarity_score": similarity_score, "image1": image_path1, "image2": image_path2}
+            rec = {"similarity_score": similarity_score, "image1": option1, "image2": option2}
             pairs.append(rec)
             cnt += 1
             progress.update(1)
+            if cnt % 100 == 0:
+                with open(f"{dest}/pairs.json", "w") as fd:
+                    json.dump(pairs, fd, indent=4)
         except Exception as e:
             continue
     progress.close()
