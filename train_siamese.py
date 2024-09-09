@@ -5,12 +5,13 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-from apihelper.models import SiamResNet
+from apihelper.models import SiamResNet,get_device
 from apihelper.custom_datasets import CustomImageDataset2
 
 
 save_path = './models/SiamResNet'
 dataset_path = './pairs/pairs.json'
+root_dir = './dataset'
 os.makedirs(save_path, exist_ok=True)
 
 logging.basicConfig(
@@ -42,13 +43,13 @@ def save_model(model, optimizer, epoch,save_path):
     print(f"Model saved at {save_path}/model_checkpoint.pth")
 
 if __name__ == '__main__':
-    dataset = CustomImageDataset2(dataset_path)
+    dataset = CustomImageDataset2(dataset_path,root_dir)
     
     logging.info(f"Dataset size: {len(dataset)}")
-    dataloader = DataLoader(dataset, batch_size=512, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
 
     # Instantiate the model
-    device = 'mps'
+    device = get_device()
     model = SiamResNet(checkpoint_path='./models/encoder_checkpoint.pth',device=device)
 
 
@@ -76,7 +77,7 @@ if __name__ == '__main__':
             input1 = input1.reshape((input1.shape[0],3,224,224)).to(device)
             input2 = input2.reshape((input2.shape[0],3,224,224)).to(device)
             label = label.to(device)
-
+            pdb.set_trace()
             # Zero the parameter gradients
             optimizer.zero_grad()
 

@@ -8,7 +8,7 @@ import torchvision.utils as vutils
 import numpy as np
 from tqdm import tqdm
 from PIL import Image,ImageFile
-from apihelper.models import Resnet50AutoEnc,ViTAutoEnc2,ResNet101Autoencoder
+from apihelper.models import Resnet50AutoEnc,ViTAutoEnc2,ResNet101Autoencoder,get_device
 from apihelper.custom_datasets import CustomImageDataset
 
 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     model = ResNet101Autoencoder()
 
 
-    device = torch.device("cuda")
+    device = torch.device(get_device())
     model.to(device)
     # Loss function
     criterion = nn.MSELoss()
