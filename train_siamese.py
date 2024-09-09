@@ -77,7 +77,6 @@ if __name__ == '__main__':
             input1 = input1.reshape((input1.shape[0],3,224,224)).to(device)
             input2 = input2.reshape((input2.shape[0],3,224,224)).to(device)
             label = label.to(device)
-            pdb.set_trace()
             # Zero the parameter gradients
             optimizer.zero_grad()
 
