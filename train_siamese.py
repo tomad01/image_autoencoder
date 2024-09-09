@@ -11,7 +11,7 @@ from apihelper.custom_datasets import CustomImageDataset2
 
 save_path = './models/SiamResNet'
 dataset_path = './pairs/pairs.json'
-root_dir = './dataset'
+root_dir = '../dataset'
 os.makedirs(save_path, exist_ok=True)
 
 logging.basicConfig(
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     dataset = CustomImageDataset2(dataset_path,root_dir)
     
     logging.info(f"Dataset size: {len(dataset)}")
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=256, shuffle=True)
 
     # Instantiate the model
     device = get_device()

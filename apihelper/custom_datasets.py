@@ -54,10 +54,24 @@ class CustomImageDataset2(Dataset):
                 translate=(0.2, 0.2)  # Max translation: 20% of image height and width
             ),
         ])
+        self.pozitive_transform1 = transforms.Compose([
+            transforms.Resize((224, 224)),  # Resize to the desired size
+            transforms.ToTensor(),           # Convert to PyTorch tensor
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            # transforms.Lambda(lambda x: torch.clamp(x + 0.1 * torch.randn_like(x), min=0, max=1)), # Add noise
+            transforms.Lambda(lambda x: modify_random_region(x, max_region_size=0.4)),  # Modify a random region
+            transforms.RandomAffine(
+                degrees=0,  # No rotation
+                translate=(0.2, 0.2)  # Max translation: 20% of image height and width
+            ),
+        ])
         with open(data_path) as f:
             dataset = json.load(f)
         self.parsed_dataset = dataset+dataset
         print(f"Dataset size: {len(self.parsed_dataset)}")
+
+    def flip_coin(self):
+        return bool(random.randint(0,1))
 
     def __len__(self):
         return len(self.parsed_dataset)
@@ -71,8 +85,22 @@ class CustomImageDataset2(Dataset):
             t_image2 = self.transform(image2)
             similarity_score = torch.tensor(pair['similarity_score'])
         else:
-            t_image1 = self.pozitive_transform(image1)
-            t_image2 = self.transform(image1)
+            
+            if self.flip_coin():
+                if self.flip_coin():
+                    t_image1 = self.pozitive_transform(image1)
+                    t_image2 = self.transform(image1)
+                else:
+                    t_image1 = self.pozitive_transform1(image1)
+                    t_image2 = self.transform(image1)
+            else:
+                image2 = Image.open(os.path.join(self.root_dir,pair['image2'])).convert('RGB')
+                if self.flip_coin():
+                    t_image1 = self.pozitive_transform(image2)
+                    t_image2 = self.transform(image2)
+                else:
+                    t_image1 = self.pozitive_transform1(image2)
+                    t_image2 = self.transform(image2)
             similarity_score = torch.tensor(1)
         return t_image1,t_image2,similarity_score
 
