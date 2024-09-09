@@ -9,3 +9,4 @@ make_dataset.py
 **/models
 **/test_dataset
 **/.ipynb_checkpoints
+info.md
