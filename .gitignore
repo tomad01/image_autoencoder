@@ -10,3 +10,4 @@ make_dataset.py
 **/test_dataset
 **/.ipynb_checkpoints
 info.md
+metadata.csv
